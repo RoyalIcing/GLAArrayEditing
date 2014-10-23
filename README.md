@@ -31,14 +31,12 @@ The GLAArrayEditing protocol allows you to present a safe interface to the metho
 
 - (NSArray *)copyCollections
 {
-	GLAArrayEditor *arrayEditor = (self.collectionsArrayEditor);
-	return [arrayEditor copyChildren];
+	return [(self.collectionsArrayEditor) copyChildren];
 }
 
 - (void)editCollectionsUsingBlock:(void (^)(id<GLAArrayEditing> collectionListEditor))block
 {
 	GLAArrayEditor *arrayEditor = (self.collectionsArrayEditor);
-	
 	GLAArrayEditorChanges *changes = [arrayEditor changesMadeInBlock:block];
 	
 	// Now respond to the changes made:
