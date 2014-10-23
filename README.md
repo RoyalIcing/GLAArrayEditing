@@ -7,7 +7,7 @@ If you have a reorderable list of items in your applications, you can use a raw 
 
 The GLAArrayEditing protocol allows you to present a safe interface to the methods that interact with your list of items, while having very straight forward observing of GLAArrayEditor behind the scenes, all in the implementation of the method.
 
-## Your visible API with one method
+## Your visible API with two methods
 
 ```objective-c
 @interface ExampleObjectWithListOfCollections : NSObject
