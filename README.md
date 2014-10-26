@@ -62,3 +62,7 @@ The edit method of GLAArrayEditor tracks changes, such as added, removed or repl
 
 @end
 ```
+
+## Source
+
+This code was developed during the creation of the app [Blik](http://twitter.com/BlikApp).
