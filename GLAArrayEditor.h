@@ -16,6 +16,7 @@
 
 // Designated init
 - (instancetype)initWithObjects:(NSArray *)objects;
+- (instancetype)init;
 
 - (GLAArrayEditorChanges *)changesMadeInBlock:(void (^)(id<GLAArrayEditing> arrayEditor))editorBlock;
 
