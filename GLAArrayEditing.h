@@ -8,8 +8,28 @@
 
 @import Foundation;
 
+@protocol GLAArrayEditing;
 
-@protocol GLAArrayEditing <NSObject>
+typedef void (^ GLAArrayEditingBlock)(id<GLAArrayEditing> arrayEditor);
+typedef id (^ GLAArrayChildVisitorBlock)(id child);
+
+
+@protocol GLAArrayInspecting <NSObject>
+
+- (NSArray *)copyChildren;
+- (id)childAtIndex:(NSUInteger)index;
+- (NSArray *)childrenAtIndexes:(NSIndexSet *)indexes;
+
+// Working with unique children
+- (NSUInteger)indexOfFirstChildWhoseKey:(NSString *)key hasValue:(id)value;
+- (NSIndexSet *)indexesOfChildrenWhoseResultFromVisitor:(GLAArrayChildVisitorBlock)childVisitor hasValueContainedInSet:(NSSet *)valuesSet;
+
+- (NSArray *)filterArray:(NSArray *)objects whoseResultFromVisitorIsNotAlreadyPresent:(GLAArrayChildVisitorBlock)childVisitor;
+
+@end
+
+
+@protocol GLAArrayEditing <GLAArrayInspecting>
 
 - (void)addChildren:(NSArray *)objects;
 - (void)insertChildren:(NSArray *)objects atIndexes:(NSIndexSet *)indexes;
@@ -17,13 +37,8 @@
 - (void)replaceChildrenAtIndexes:(NSIndexSet *)indexes withObjects:(NSArray *)objects;
 - (void)moveChildrenAtIndexes:(NSIndexSet *)indexes toIndex:(NSUInteger)toIndex;
 
-- (NSArray *)copyChildren;
-- (NSArray *)childrenAtIndexes:(NSIndexSet *)indexes;
+- (BOOL)removeFirstChildWhoseKey:(NSString *)key hasValue:(id)value;
 
-// Working with unique children
-- (NSIndexSet *)indexesOfChildrenWhoseKeyPath:(NSString *)keyPath hasValue:(id)value;
-- (NSIndexSet *)indexesOfChildrenWhoseKeyPath:(NSString *)keyPath hasValueContainedInSet:(NSSet *)valuesSet;
-- (NSArray *)filterArray:(NSArray *)objects whoseValuesIsNotPresentForKeyPath:(NSString *)keyPath;
-- (BOOL)replaceFirstChildWhoseKey:(NSString *)key hasValue:(id)value usingChangeBlock:(id (^)(id originalObject))objectChanger;
+- (id)replaceFirstChildWhoseKey:(NSString *)key hasValue:(id)value usingChangeBlock:(id (^)(id originalObject))objectChanger;
 
 @end
