@@ -1,13 +1,13 @@
-GLAArrayEditor
-==============
+GLAArrayEditing
+===============
 
 ## Use
 
 If you have a reorderable list of items in your application, you can use a raw NSMutableArray, key-value-observing compatible methods, or write custom methods to perform the same concepts of adding, removing, replacing, and reordering.
 
-The GLAArrayEditing protocol allows you to present a powerful yet safe interface for any array of items. Behind the scenes GLAArrayEditor allows your implementation to be just two methods, one to copy and one to edit.
+The GLAArrayEditing protocol allows you to present a powerful, cosistent, and safe interface for any array of items. Behind the scenes GLAArrayEditor allows your implementation to be just two methods, one to copy and one to edit. You can also create intermediate or your own classes that conform to the protocol.
 
-The edit method of GLAArrayEditor tracks changes, such as added, removed or replaced objects, and provides access to them as simple properties for your code to work with.
+Use the edit method of GLAArrayEditor to track changes such as added, removed or replaced objects, using return value to access these combined changes as simple properties.
 
 ## Your visible API with two methods
 
@@ -45,7 +45,7 @@ The edit method of GLAArrayEditor tracks changes, such as added, removed or repl
 	
 	// changes.addedChildren
 	
-	// changes.removeChildren
+	// changes.removedChildren
 	
 	// changes.replacedChildrenBefore
 	// changes.replacedChildrenAfter
