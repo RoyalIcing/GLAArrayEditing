@@ -9,7 +9,7 @@ The **GLAArrayEditing** protocol allows you to present a powerful, consistent, a
 
 ### Get changes
 
-Use the edit method of `GLAArrayEditor` to track changes such as the added, removed or replaced objects. Its return value provides access these combined changes as simple properties.
+Use the `-changesMadeInBlock:` method of `GLAArrayEditor` to track the added, removed, or replaced objects. Its return value provides access these combined changes as simple properties.
 
 ### Indexers
 
