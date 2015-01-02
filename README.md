@@ -19,11 +19,11 @@ Indexers allow array items to be looked up quickly by key. Any changes to the ar
 
 The `GLAArrayEditor` class supports stores, so your list of items can be loaded from disk, and also automatically saved after any changes. For using Mantle objects stored as JSON, see the [GLAArray-Mantle respository.](https://github.com/BurntCaramel/GLAArray-Mantle)
 
-You can also create your own classes that conform to the `GLAArrayEditing` protocol.
-
 ### Table View Dragging
 
-Use the `GLAArrayTableDraggingHelper` to easily enable rearranging in your `<GLAArrayEditing>`-supported table view data source.
+Use the `GLAArrayTableDraggingHelper` to easily enable rearranging in your `<GLAArrayEditing>`-supported table data source.
+
+You can easily create your own classes that conform to the `GLAArrayEditing` protocol.
 
 ## Example
 
