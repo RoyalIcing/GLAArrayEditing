@@ -44,6 +44,11 @@
 @end
 
 
+@interface GLAArrayEditor (GLAArrayEditing) <GLAArrayEditing>
+
+@end
+
+
 @interface GLAArrayEditor ()
 
 @property(nonatomic) NSMutableArray *mutableChildren;
@@ -139,7 +144,7 @@
 	[self notifyObserversDidLoad];
 }
 
-#pragma mark -
+#pragma mark - <GLAArrayInspecting>
 
 - (NSArray *)copyChildren
 {
@@ -164,128 +169,6 @@
 {
 	return (self.mutableChildren.count);
 }
-
-- (GLAArrayEditorChanges *)changesMadeInBlock:(GLAArrayEditingBlock)editorBlock
-{
-	GLAArrayEditorChanges *changes = [GLAArrayEditorChanges new];
-	(self.currentChanges) = changes;
-	
-	editorBlock(self);
-	
-	[self notifyObserversDidMakeChanges:changes];
-	
-	(self.currentChanges) = nil;
-	
-	return changes;
-}
-
-- (BOOL)needsLoadingFromStore
-{
-	id<GLAArrayStoring> store = (self.store);
-	if (store) {
-		return (store.loadState) == GLAArrayStoringLoadStateNeedsLoading;
-	}
-	else {
-		return NO;
-	}
-}
-
-#pragma mark Constrainers
-
-- (NSArray *)constrainPotentialChildren:(NSArray *)potentialChildren
-{
-	for (id<GLAArrayEditorConstraining> constrainer in (self.constrainers)) {
-		potentialChildren = [constrainer arrayEditor:self filterPotentialChildren:potentialChildren];
-	}
-	
-	return potentialChildren;
-}
-
-#pragma mark - <GLAArrayEditing>
-
-- (void)addChildren:(NSArray *)objects
-{
-	NSParameterAssert(objects != nil);
-	
-	NSMutableArray *mutableChildren = (self.mutableChildren);
-	[mutableChildren addObjectsFromArray:objects];
-	
-	GLAArrayEditorChanges *changes = (self.currentChanges);
-	if (changes) {
-		[(changes.mutableAddedChildren) addObjectsFromArray:objects];
-	}
-}
-
-- (void)insertChildren:(NSArray *)objects atIndexes:(NSIndexSet *)indexes
-{
-	NSParameterAssert(objects != nil);
-	NSParameterAssert(indexes != nil);
-	
-	NSMutableArray *mutableChildren = (self.mutableChildren);
-	[mutableChildren insertObjects:objects atIndexes:indexes];
-	
-	GLAArrayEditorChanges *changes = (self.currentChanges);
-	if (changes) {
-		[changes includeAddedChildren:objects];
-	}
-}
-
-- (void)removeChildrenAtIndexes:(NSIndexSet *)indexes
-{
-	NSParameterAssert(indexes != nil);
-	
-	NSMutableArray *mutableChildren = (self.mutableChildren);
-	
-	GLAArrayEditorChanges *changes = (self.currentChanges);
-	if (changes) {
-		NSArray *removedChildren = [mutableChildren objectsAtIndexes:indexes];
-		[changes includeRemovedChildren:removedChildren];
-	}
-	
-	[mutableChildren removeObjectsAtIndexes:indexes];
-}
-
-- (void)replaceChildrenAtIndexes:(NSIndexSet *)indexes withObjects:(NSArray *)objects
-{
-	NSParameterAssert(indexes != nil);
-	NSParameterAssert(objects != nil);
-	
-	NSMutableArray *mutableChildren = (self.mutableChildren);
-	
-	GLAArrayEditorChanges *changes = (self.currentChanges);
-	if (changes) {
-		NSArray *originalChildren = [mutableChildren objectsAtIndexes:indexes];
-		[changes includeReplacedChildrenFrom:originalChildren to:objects];
-	}
-	
-	[mutableChildren replaceObjectsAtIndexes:indexes withObjects:objects];
-}
-
-- (void)moveChildrenAtIndexes:(NSIndexSet *)indexes toIndex:(NSUInteger)toIndex
-{
-	NSParameterAssert(indexes != nil);
-	NSParameterAssert(toIndex != NSNotFound);
-	
-	NSMutableArray *mutableChildren = (self.mutableChildren);
-	
-	GLAArrayEditorChanges *changes = (self.currentChanges);
-	if (changes) {
-		[changes includeMovedChildrenFromIndexes:indexes toIndex:toIndex];
-	}
-	
-	NSArray *objectsToMove = [mutableChildren objectsAtIndexes:indexes];
-	[mutableChildren removeObjectsAtIndexes:indexes];
-	[mutableChildren insertObjects:objectsToMove atIndexes:[NSIndexSet indexSetWithIndex:toIndex]];
-}
-
-- (void)replaceAllChildrenWithObjects:(NSArray *)objects
-{
-	NSRange entireRange = NSMakeRange(0, (self.childrenCount));
-	NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:entireRange];
-	[self replaceChildrenAtIndexes:indexes withObjects:objects];
-}
-
-#pragma mark -
 
 - (NSArray *)resultsFromChildVisitor:(GLAArrayChildVisitorBlock)childVisitor
 {
@@ -388,6 +271,142 @@
 	return filteredObjects;
 }
 
+#pragma mark -
+
+- (id)objectForKeyedSubscript:(id <NSCopying>)key
+{
+	id<GLAArrayEditorIndexing> primaryIndexer = (self.primaryIndexer);
+	if (primaryIndexer) {
+		return primaryIndexer[key];
+	}
+	else {
+		return nil;
+	}
+}
+
+#pragma mark -
+
+- (GLAArrayEditorChanges *)changesMadeInBlock:(GLAArrayEditingBlock)editorBlock
+{
+	GLAArrayEditorChanges *changes = [GLAArrayEditorChanges new];
+	(self.currentChanges) = changes;
+	
+	editorBlock(self);
+	
+	[self notifyObserversDidMakeChanges:changes];
+	
+	(self.currentChanges) = nil;
+	
+	return changes;
+}
+
+- (BOOL)needsLoadingFromStore
+{
+	id<GLAArrayStoring> store = (self.store);
+	if (store) {
+		return (store.loadState) == GLAArrayStoringLoadStateNeedsLoading;
+	}
+	else {
+		return NO;
+	}
+}
+
+- (NSArray *)constrainPotentialChildren:(NSArray *)potentialChildren
+{
+	for (id<GLAArrayEditorConstraining> constrainer in (self.constrainers)) {
+		potentialChildren = [constrainer arrayEditor:self filterPotentialChildren:potentialChildren];
+	}
+	
+	return potentialChildren;
+}
+
+@end
+
+
+@implementation GLAArrayEditor (GLAArrayEditing)
+
+- (void)addChildren:(NSArray *)objects
+{
+	NSParameterAssert(objects != nil);
+	
+	NSMutableArray *mutableChildren = (self.mutableChildren);
+	[mutableChildren addObjectsFromArray:objects];
+	
+	GLAArrayEditorChanges *changes = (self.currentChanges);
+	if (changes) {
+		[(changes.mutableAddedChildren) addObjectsFromArray:objects];
+	}
+}
+
+- (void)insertChildren:(NSArray *)objects atIndexes:(NSIndexSet *)indexes
+{
+	NSParameterAssert(objects != nil);
+	NSParameterAssert(indexes != nil);
+	
+	NSMutableArray *mutableChildren = (self.mutableChildren);
+	[mutableChildren insertObjects:objects atIndexes:indexes];
+	
+	GLAArrayEditorChanges *changes = (self.currentChanges);
+	if (changes) {
+		[changes includeAddedChildren:objects];
+	}
+}
+
+- (void)removeChildrenAtIndexes:(NSIndexSet *)indexes
+{
+	NSParameterAssert(indexes != nil);
+	
+	NSMutableArray *mutableChildren = (self.mutableChildren);
+	
+	GLAArrayEditorChanges *changes = (self.currentChanges);
+	if (changes) {
+		NSArray *removedChildren = [mutableChildren objectsAtIndexes:indexes];
+		[changes includeRemovedChildren:removedChildren];
+	}
+	
+	[mutableChildren removeObjectsAtIndexes:indexes];
+}
+
+- (void)replaceChildrenAtIndexes:(NSIndexSet *)indexes withObjects:(NSArray *)objects
+{
+	NSParameterAssert(indexes != nil);
+	NSParameterAssert(objects != nil);
+	
+	NSMutableArray *mutableChildren = (self.mutableChildren);
+	
+	GLAArrayEditorChanges *changes = (self.currentChanges);
+	if (changes) {
+		NSArray *originalChildren = [mutableChildren objectsAtIndexes:indexes];
+		[changes includeReplacedChildrenFrom:originalChildren to:objects];
+	}
+	
+	[mutableChildren replaceObjectsAtIndexes:indexes withObjects:objects];
+}
+
+- (void)moveChildrenAtIndexes:(NSIndexSet *)indexes toIndex:(NSUInteger)toIndex
+{
+	NSParameterAssert(indexes != nil);
+	NSParameterAssert(toIndex != NSNotFound);
+	
+	NSMutableArray *mutableChildren = (self.mutableChildren);
+	
+	GLAArrayEditorChanges *changes = (self.currentChanges);
+	if (changes) {
+		[changes includeMovedChildrenFromIndexes:indexes toIndex:toIndex];
+	}
+	
+	NSArray *objectsToMove = [mutableChildren objectsAtIndexes:indexes];
+	[mutableChildren removeObjectsAtIndexes:indexes];
+	[mutableChildren insertObjects:objectsToMove atIndexes:[NSIndexSet indexSetWithIndex:toIndex]];
+}
+
+- (void)replaceAllChildrenWithObjects:(NSArray *)objects
+{
+	NSRange entireRange = NSMakeRange(0, (self.childrenCount));
+	NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:entireRange];
+	[self replaceChildrenAtIndexes:indexes withObjects:objects];
+}
+
 - (BOOL)removeFirstChildWhoseKey:(NSString *)key hasValue:(id)value
 {
 	NSUInteger index = [self indexOfFirstChildWhoseKey:key hasValue:value];
@@ -420,20 +439,10 @@
 	return replacementObject;
 }
 
-#pragma mark -
-
-- (id)objectForKeyedSubscript:(id <NSCopying>)key
-{
-	id<GLAArrayEditorIndexing> primaryIndexer = (self.primaryIndexer);
-	if (primaryIndexer) {
-		return primaryIndexer[key];
-	}
-	else {
-		return nil;
-	}
-}
-
 @end
+
+
+#pragma mark -
 
 
 @implementation GLAArrayEditorChanges

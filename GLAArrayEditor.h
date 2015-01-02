@@ -14,7 +14,7 @@
 @class GLAArrayEditorChanges;
 
 
-@interface GLAArrayEditor : NSObject <GLAArrayEditing>
+@interface GLAArrayEditor : NSObject <GLAArrayInspecting>
 
 // Designated init
 - (instancetype)initWithObjects:(NSArray *)objects options:(GLAArrayEditorOptions *)options NS_DESIGNATED_INITIALIZER;
@@ -120,6 +120,3 @@ typedef NS_ENUM(NSUInteger, GLAArrayStoringSaveState) {
 
 extern NSString *GLAArrayStoringDidLoadNotification;
 extern NSString *GLAArrayStoringDidLoadNotificationUserInfoLoadedChildren;
-
-//extern NSString *GLAArrayStoringDidLoadNotification;
-//extern NSString *GLAArrayStoringDidLoadNotificationUserInfoLoadedChildren;
