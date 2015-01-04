@@ -311,6 +311,17 @@
 	}
 }
 
+- (BOOL)finishedLoadingFromStore
+{
+	id<GLAArrayStoring> store = (self.store);
+	if (store) {
+		return (store.loadState) == GLAArrayStoringLoadStateFinishedLoading;
+	}
+	else {
+		return YES;
+	}
+}
+
 - (NSArray *)constrainPotentialChildren:(NSArray *)potentialChildren
 {
 	for (id<GLAArrayEditorConstraining> constrainer in (self.constrainers)) {
@@ -334,7 +345,7 @@
 	
 	GLAArrayEditorChanges *changes = (self.currentChanges);
 	if (changes) {
-		[(changes.mutableAddedChildren) addObjectsFromArray:objects];
+		[changes includeAddedChildren:objects];
 	}
 }
 
@@ -524,6 +535,9 @@
 }
 
 @end
+
+
+#pragma mark -
 
 
 @implementation GLAArrayEditorOptions
