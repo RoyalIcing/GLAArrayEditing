@@ -123,4 +123,4 @@ You can easily create your own classes that conform to the `GLAArrayEditing` pro
 
 ## Source
 
-This was developed during the creation of my app [Blik](http://twitter.com/BlikApp).
+This was made during the creation of [my app Blik](http://www.burntcaramel.com/blik/).
