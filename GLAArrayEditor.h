@@ -13,7 +13,8 @@
 @class GLAArrayEditorOptions;
 @class GLAArrayEditorChanges;
 
-
+// Designed to be used from main queue,
+// with stores loading and saving in the background.
 @interface GLAArrayEditor : NSObject <GLAArrayInspecting>
 
 // Designated init
@@ -30,10 +31,13 @@
 @property(readonly, nonatomic) id<GLAArrayStoring> store;
 @property(readonly, nonatomic) BOOL needsLoadingFromStore;
 @property(readonly, nonatomic) BOOL finishedLoadingFromStore;
+@property(readonly, getter = isReadyForEditing, nonatomic) BOOL readyForEditing;
 
 - (NSArray *)constrainPotentialChildren:(NSArray *)potentialChildren;
 
 @end
+
+extern NSString *GLAArrayEditorWithStoreIsReadyForEditingNotification;
 
 
 @interface GLAArrayEditorOptions : NSObject <NSCopying>
@@ -106,6 +110,7 @@ typedef NS_ENUM(NSUInteger, GLAArrayStoringSaveState) {
 };
 
 
+// A store works by observing the array for changes, saving when one is made.
 @protocol GLAArrayStoring <GLAArrayEditorObserving>
 
 @property(readonly, nonatomic) BOOL freshlyMade;

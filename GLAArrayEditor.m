@@ -61,6 +61,8 @@
 
 @property(readonly, copy, nonatomic) NSArray *constrainers;
 
+@property(nonatomic) NSMutableArray *operationsToCallWhenLoaded;
+
 @property(nonatomic) GLAArrayEditorChanges *currentChanges;
 
 - (void)notifyObserversArrayWasCreated;
@@ -86,8 +88,11 @@
 			_constrainers = [(options.constrainers) copy];
 			
 			id<GLAArrayStoring> store = _store = (options.store);
-			if (store) {
+			if (store && (store.loadState) != GLAArrayStoringLoadStateFinishedLoading) {
 				[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(storeDidLoadNotification:) name:GLAArrayStoringDidLoadNotification object:store];
+			}
+			else {
+				_readyForEditing = YES;
 			}
 		}
 		else {
@@ -103,45 +108,6 @@
 - (instancetype)init
 {
 	return [self initWithObjects:@[] options:nil];
-}
-
-#pragma mark Observers
-
-- (void)notifyObserversArrayWasCreated
-{
-	for (id<GLAArrayEditorObserving> observer in (self.observers)) {
-		if ([observer respondsToSelector:@selector(arrayEditorWasCreated:)]) {
-			[observer arrayEditorWasCreated:self];
-		}
-	}
-}
-
-- (void)notifyObserversDidLoad
-{
-	for (id<GLAArrayEditorObserving> observer in (self.observers)) {
-		if ([observer respondsToSelector:@selector(arrayEditorDidLoad:)]) {
-			[observer arrayEditorDidLoad:self];
-		}
-	}
-}
-
-- (void)notifyObserversDidMakeChanges:(GLAArrayEditorChanges *)changes
-{
-	for (id<GLAArrayEditorObserving> observer in (self.observers)) {
-		if ([observer respondsToSelector:@selector(arrayEditor:didMakeChanges:)]) {
-			[observer arrayEditor:self didMakeChanges:changes];
-		}
-	}
-}
-
-- (void)storeDidLoadNotification:(NSNotification *)note
-{
-	NSDictionary *info = (note.userInfo);
-	NSArray *loadedChildren = info[GLAArrayStoringDidLoadNotificationUserInfoLoadedChildren];
-	//TODO: decide whether this should be in a change block.
-	[self addChildren:loadedChildren];
-	
-	[self notifyObserversDidLoad];
 }
 
 #pragma mark - <GLAArrayInspecting>
@@ -284,10 +250,66 @@
 	}
 }
 
+#pragma mark Observers
+
+- (void)notifyObserversArrayWasCreated
+{
+	for (id<GLAArrayEditorObserving> observer in (self.observers)) {
+		if ([observer respondsToSelector:@selector(arrayEditorWasCreated:)]) {
+			[observer arrayEditorWasCreated:self];
+		}
+	}
+}
+
+- (void)notifyObserversDidLoad
+{
+	for (id<GLAArrayEditorObserving> observer in (self.observers)) {
+		if ([observer respondsToSelector:@selector(arrayEditorDidLoad:)]) {
+			[observer arrayEditorDidLoad:self];
+		}
+	}
+}
+
+- (void)notifyObserversDidMakeChanges:(GLAArrayEditorChanges *)changes
+{
+	for (id<GLAArrayEditorObserving> observer in (self.observers)) {
+		if ([observer respondsToSelector:@selector(arrayEditor:didMakeChanges:)]) {
+			[observer arrayEditor:self didMakeChanges:changes];
+		}
+	}
+}
+
+- (void)storeDidLoadNotification:(NSNotification *)note
+{
+	NSDictionary *info = (note.userInfo);
+	NSArray *loadedChildren = info[GLAArrayStoringDidLoadNotificationUserInfoLoadedChildren];
+	//TODO: decide whether this should be in a change block.
+	// Currently isn't as observers will get different notifications
+	// if this is called in change block.
+	[self addChildren:loadedChildren];
+	
+	[self notifyObserversDidLoad];
+	
+	NSMutableArray *operationsToCallWhenLoaded = (self.operationsToCallWhenLoaded);
+	if (operationsToCallWhenLoaded) {
+		for (NSOperation *operation in operationsToCallWhenLoaded) {
+			[operation start];
+		}
+		
+		(self.operationsToCallWhenLoaded) = nil;
+	}
+	
+	_readyForEditing = YES;
+	
+	[[NSNotificationCenter defaultCenter] postNotificationName:GLAArrayEditorWithStoreIsReadyForEditingNotification object:self];
+}
+
 #pragma mark -
 
 - (GLAArrayEditorChanges *)changesMadeInBlock:(GLAArrayEditingBlock)editorBlock
 {
+	NSAssert((self.needsLoadingFromStore) ? (self.finishedLoadingFromStore) : YES, @"Array editor must have finished loading to make changes.");
+	
 	GLAArrayEditorChanges *changes = [GLAArrayEditorChanges new];
 	(self.currentChanges) = changes;
 	
@@ -340,6 +362,10 @@
 {
 	NSParameterAssert(objects != nil);
 	
+	if ((objects.count) == 0) {
+		return;
+	}
+	
 	NSMutableArray *mutableChildren = (self.mutableChildren);
 	[mutableChildren addObjectsFromArray:objects];
 	
@@ -353,6 +379,11 @@
 {
 	NSParameterAssert(objects != nil);
 	NSParameterAssert(indexes != nil);
+	NSParameterAssert((indexes.count) == (objects.count));
+	
+	if ((objects.count) == 0) {
+		return;
+	}
 	
 	NSMutableArray *mutableChildren = (self.mutableChildren);
 	[mutableChildren insertObjects:objects atIndexes:indexes];
@@ -366,6 +397,10 @@
 - (void)removeChildrenAtIndexes:(NSIndexSet *)indexes
 {
 	NSParameterAssert(indexes != nil);
+	
+	if ((indexes.count) == 0) {
+		return;
+	}
 	
 	NSMutableArray *mutableChildren = (self.mutableChildren);
 	
@@ -382,6 +417,11 @@
 {
 	NSParameterAssert(indexes != nil);
 	NSParameterAssert(objects != nil);
+	NSParameterAssert((indexes.count) == (objects.count));
+	
+	if ((indexes.count) == 0) {
+		return;
+	}
 	
 	NSMutableArray *mutableChildren = (self.mutableChildren);
 	
@@ -397,6 +437,7 @@
 - (void)moveChildrenAtIndexes:(NSIndexSet *)indexes toIndex:(NSUInteger)toIndex
 {
 	NSParameterAssert(indexes != nil);
+	NSParameterAssert((indexes.count) > 0);
 	NSParameterAssert(toIndex != NSNotFound);
 	
 	NSMutableArray *mutableChildren = (self.mutableChildren);
@@ -415,7 +456,8 @@
 {
 	NSRange entireRange = NSMakeRange(0, (self.childrenCount));
 	NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:entireRange];
-	[self replaceChildrenAtIndexes:indexes withObjects:objects];
+	[self removeChildrenAtIndexes:indexes];
+	[self addChildren:objects];
 }
 
 - (BOOL)removeFirstChildWhoseKey:(NSString *)key hasValue:(id)value
@@ -451,6 +493,8 @@
 }
 
 @end
+
+NSString *GLAArrayEditorWithStoreIsReadyForEditingNotification = @"GLAArrayEditorWithStoreIsReadyForEditingNotification";
 
 
 #pragma mark -

@@ -28,7 +28,7 @@
 	return self;
 }
 
-- (instancetype)init
+- (instancetype)init __unavailable
 {
 	@throw [NSException exceptionWithName:NSGenericException reason:@"GLAArrayEditorTableDraggingHelper must be initialised with a delegate. Use -initWithDelegate:" userInfo:nil];
 	
@@ -67,7 +67,7 @@
 	return [delegate arrayEditorTableDraggingHelper:self makeCopiesOfObjects:objectsToCopy];
 }
 
-#pragma mark <NSTableViewDelegate>
+#pragma mark <NSTableViewDataSource>
 
 - (void)tableView:(NSTableView *)tableView draggingSession:(NSDraggingSession *)session willBeginAtPoint:(NSPoint)screenPoint forRowIndexes:(NSIndexSet *)rowIndexes
 {
