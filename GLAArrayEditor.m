@@ -61,8 +61,6 @@
 
 @property(readonly, copy, nonatomic) NSArray *constrainers;
 
-@property(nonatomic) NSMutableArray *operationsToCallWhenLoaded;
-
 @property(nonatomic) GLAArrayEditorChanges *currentChanges;
 
 - (void)notifyObserversArrayWasCreated;
@@ -289,15 +287,6 @@
 	[self addChildren:loadedChildren];
 	
 	[self notifyObserversDidLoad];
-	
-	NSMutableArray *operationsToCallWhenLoaded = (self.operationsToCallWhenLoaded);
-	if (operationsToCallWhenLoaded) {
-		for (NSOperation *operation in operationsToCallWhenLoaded) {
-			[operation start];
-		}
-		
-		(self.operationsToCallWhenLoaded) = nil;
-	}
 	
 	_readyForEditing = YES;
 	
