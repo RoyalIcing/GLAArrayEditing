@@ -27,15 +27,22 @@ You can easily create your own classes that conform to the `GLAArrayEditing` pro
 
 ## Example
 
-### Your public model API with two methods
+### Your public model API
 
 ```objective-c
 @interface ExampleObjectWithListOfCollections : NSObject
 
+// The simple public API:
 - (NSArray *)copyCollections;
 - (void)editCollectionsUsingBlock:(void (^)(id<GLAArrayEditing> collectionListEditor))block;
-	
+
+// Or the more convenient public API.
+// Set .changeCompletionBlock on the result from -useCollections to update when the collections change.
+- (id<GLALoadableArrayUsing>)useCollections;
+
 @end
+
+extern NSString *ExampleObjectWithListOfCollectionsCollectionsDidChangeNotification;
 ```
 
 ### Your implementation
@@ -60,13 +67,35 @@ You can easily create your own classes that conform to the `GLAArrayEditing` pro
 	GLAArrayEditorChanges *changes = [arrayEditor changesMadeInBlock:block];
 	
 	// Now respond to the changes made:
-	
+	// Added:
 	// changes.addedChildren
-	
+	// Removed:
 	// changes.removedChildren
-	
+	// Replaced
 	// changes.replacedChildrenBefore
 	// changes.replacedChildrenAfter
+	
+	[[NSNotificationCenter defaultCenter]
+		postNotificationName:ExampleObjectWithListOfCollectionsCollectionsDidChangeNotification
+		object:self
+	];
+}
+
+- (id<GLALoadableArrayUsing>)useCollections
+{
+	GLAArrayEditorUser *arrayEditorUser = [[GLAArrayEditorUser alloc] initWithLoadingBlock:^GLAArrayEditor *(BOOL createAndLoadIfNeeded) {
+		return (self.collectionsArrayEditor);
+	} makeEditsBlock:^(GLAArrayEditingBlock editingBlock) {
+		[self editCollectionsUsingBlock:editingBlock];
+	}];
+	
+	// Observes all edits, not just the ones done by this 'user'.
+	[arrayEditorUser
+		makeObserverOfObject:self
+		forChangeNotificationWithName:ExampleObjectWithListOfCollectionsCollectionsDidChangeNotification
+	];
+
+	return arrayEditorUser;
 }
 
 - (instancetype)init
@@ -79,6 +108,9 @@ You can easily create your own classes that conform to the `GLAArrayEditing` pro
 }
 
 @end
+
+NSString *ExampleObjectWithListOfCollectionsCollectionsDidChangeNotification =
+@"ExampleObjectWithListOfCollectionsCollectionsDidChangeNotification";
 ```
 
 ## The GLAArrayEditing methods
@@ -119,8 +151,23 @@ You can easily create your own classes that conform to the `GLAArrayEditing` pro
 - (id)replaceFirstChildWhoseKey:(NSString *)key hasValue:(id)value usingChangeBlock:(id (^)(id originalObject))objectChanger;
 
 @end
+
+
+@protocol GLALoadableArrayUsing <NSObject>
+
+@property(copy, nonatomic) GLAArrayInspectingBlock changeCompletionBlock;
+
+@property(readonly, nonatomic) BOOL finishedLoading;
+
+- (NSArray *)copyChildrenLoadingIfNeeded;
+- (id<GLAArrayInspecting>)inspectLoadingIfNeeded;
+- (void)editChildrenUsingBlock:(GLAArrayEditingBlock)block;
+
+@property(nonatomic) id representedObject;
+
+@end
 ```
 
-## Source
+## Origin
 
-This was made during the creation of [my app Blik](http://www.burntcaramel.com/blik/).
+This was made during the creation of [my file management app Blik](http://www.burntcaramel.com/blik/).
